@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Freight Commodity HS Code Classification</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600&display=swap');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+
+        ::selection {
+            color: #fff;
+            background: #664AFF;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 800px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container .searchInput {
+            background: #fff;
+            width: 100%;
+            border-radius: 5px;
+            position: relative;
+            box-shadow: 0px 1px 5px 3px rgba(0, 0, 0, 0.12);
+        }
+
+        .searchInput input {
+            height: 55px;
+            width: 100%;
+            outline: none;
+            border: none;
+            border-radius: 5px;
+            padding: 0 60px 0 20px;
+            font-size: 18px;
+            box-shadow: 0px 1px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .searchInput.active input {
+            border-radius: 5px 5px 0 0;
+        }
+
+        .searchInput .resultBox {
+            padding: 0;
+            opacity: 0;
+            pointer-events: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .searchInput.active .resultBox {
+            padding: 5px 4px;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .resultBox .resultItem {
+            background: #fff;
+            border-radius: 5px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            box-shadow: 0px 1px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .resultBox .resultItem .hsCode {
+            font-weight: bold;
+            font-size: 18px;
+            color: #644bff;
+            margin-bottom: 5px;
+        }
+
+        .resultBox .resultItem .rationale {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .resultBox .resultItem:not(:last-child) {
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        .searchInput .icon {
+            position: absolute;
+            right: 0px;
+            top: 0px;
+            height: 55px;
+            width: 55px;
+            text-align: center;
+            line-height: 55px;
+            font-size: 20px;
+            color: #644bff;
+            cursor: pointer;
+        }
+
+        .icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        
+    </style>
+</head>
+<body>
+
+    <form id="my-form" method="POST">
+        <div class="container">
+            <div class="searchInput">
+                <input type="text" name="cargo_desc" required placeholder="Input Freight Cargo Description" style="width:100%">
+                <div class="resultBox"></div>
+                <div class="icon"><i class="fas fa-search"></i></div>
+            </div>
+        </div>
+    </form>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            $("#my-form").submit(function(event){
+                event.preventDefault();
+                callAPI();
+            });
+
+            $(".icon").click(function(){
+                callAPI();
+            });
+
+            function callAPI() {
+                var cargo_desc = $("input[name='cargo_desc']").val();
+                $.ajax({
+                    type: "POST",
+                    url: "/api",
+                    data: JSON.stringify({cargo_desc: cargo_desc}),
+                    contentType: "application/json",
+                    dataType: "json",
+                    success: function(response) {
+                        console.log("API Response:", response); // Log the response to debug
+
+                        var resultBox = $('.resultBox');
+                        resultBox.empty();
+
+                        if (response.hs4_codes && response.rationales) {
+                            var hs4_codes = response.hs4_codes;
+                            var rationales = response.rationales;
+
+                            for (var i = 0; i < hs4_codes.length; i++) {
+                                var resultItem = $("<div>").addClass("resultItem");
+                                var hsCode = $("<div>").addClass("hsCode").text('HSCODE - ' + hs4_codes[i]);
+                                var rationale = $("<div>").addClass("rationale").text(rationales[i]);
+
+                                resultItem.append(hsCode);
+                                resultItem.append(rationale);
+
+                                resultBox.append(resultItem);
+                            }
+
+                            $(".searchInput").addClass("active");
+                        } else {
+                            resultBox.append($("<div>").addClass("resultItem").text("Error: Invalid response from API"));
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.log("API Error:", error); // Log any errors
+                        var resultBox = $('.resultBox');
+                        resultBox.empty();
+                        resultBox.append($("<div>").addClass("resultItem").text("Error: Unable to fetch data from API"));
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
